@@ -1,0 +1,28 @@
+{
+  "name": "acrohub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unofficial viewer of IAC contest results from the IAC Contest Database.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test lib/*.test.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
