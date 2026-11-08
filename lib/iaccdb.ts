@@ -1,3 +1,4 @@
+import https from "node:https";
 import { CACHE_TTL_MS, IACCDB_ORIGIN, PILOT_SCORE_FETCH_LIMIT } from "./constants";
 import { mapPool } from "./pool";
 import {
@@ -12,6 +13,7 @@ import {
   searchPilots,
 } from "./parse";
 import { computeScoresheet, type Scoresheet } from "./scoresheet";
+import { seasonResultsFromContest, type SeasonResult } from "./season-stats";
 import { matchPilotScore, toPilotScore } from "./scores";
 import type {
   ContestDetail,
@@ -85,29 +87,81 @@ async function iaccdbFetch(path: string, accept: string): Promise<CacheEntry> {
   return request;
 }
 
-async function fetchEntry(path: string, accept: string): Promise<CacheEntry> {
+function fetchEntry(path: string, accept: string, redirects = 0): Promise<CacheEntry> {
   pruneCache();
-  const response = await fetch(`${IACCDB_ORIGIN}${path}`, {
-    headers: {
-      Accept: accept,
-      "User-Agent": "Acrohub/1.0 (unofficial IACCDB viewer)",
-    },
-    cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const fail = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
+    const request = https.get(
+      `${IACCDB_ORIGIN}${path}`,
+      {
+        headers: {
+          Accept: accept,
+          "User-Agent": "Acrohub/1.0 (unofficial IACCDB viewer)",
+        },
+        timeout: 20_000,
+      },
+      (response) => {
+        const status = response.statusCode ?? 502;
+        const location = response.headers.location;
+        if (status >= 300 && status < 400 && location && redirects < 3) {
+          response.resume();
+          const next = new URL(location, IACCDB_ORIGIN);
+          if (next.origin !== IACCDB_ORIGIN) {
+            fail(new UpstreamError("IACCDB redirect left the contest database", 502));
+            return;
+          }
+          fetchEntry(`${next.pathname}${next.search}`, accept, redirects + 1).then(
+            (entry) => {
+              if (settled) return;
+              settled = true;
+              resolve(entry);
+            },
+            fail,
+          );
+          return;
+        }
+        const chunks: Buffer[] = [];
+        let size = 0;
+        response.on("data", (chunk: Buffer) => {
+          size += chunk.length;
+          if (size > MAX_BYTES) {
+            request.destroy();
+            fail(new UpstreamError("IACCDB response was too large", 502));
+            return;
+          }
+          chunks.push(chunk);
+        });
+        response.on("end", () => {
+          if (settled) return;
+          settled = true;
+          if (status < 200 || status >= 300) console.error(`IACCDB ${status} ${path}`);
+          const body = Buffer.concat(chunks)
+            .toString("utf8")
+            .replaceAll("http://localhost:3000", IACCDB_ORIGIN)
+            .replaceAll("https://localhost:3000", IACCDB_ORIGIN);
+          resolve({
+            expires: Date.now() + (status >= 200 && status < 300 ? CACHE_TTL_MS : ERROR_TTL_MS),
+            status,
+            body,
+            ok: status >= 200 && status < 300,
+          });
+        });
+      },
+    );
+    request.on("timeout", () => {
+      request.destroy();
+      fail(new UpstreamError("IACCDB timed out", 504));
+    });
+    request.on("error", (error) => {
+      if ((error as NodeJS.ErrnoException).code === "ERR_STREAM_DESTROYED") return;
+      fail(error);
+    });
   });
-  const body = await response.text();
-  if (body.length > MAX_BYTES) {
-    throw new UpstreamError("IACCDB response was too large", 502);
-  }
-  if (!response.ok) {
-    console.error(`IACCDB ${response.status} ${path}`);
-  }
-  return {
-    expires: Date.now() + (response.ok ? CACHE_TTL_MS : ERROR_TTL_MS),
-    status: response.status,
-    body,
-    ok: response.ok,
-  };
 }
 
 async function readJson(path: string): Promise<unknown> {
@@ -128,6 +182,26 @@ async function readHtml(path: string): Promise<CacheEntry> {
 export async function getContestIndex(year?: string): Promise<YearIndex> {
   const path = year && /^\d{4}$/.test(year) ? `/contests.json?year=${year}` : "/contests.json";
   return parseContestIndex(await readJson(path));
+}
+
+export async function getSeasonResults(year?: string): Promise<{
+  year: number;
+  years: number[];
+  results: SeasonResult[];
+  contestsPosted: number;
+}> {
+  const requested = year && /^\d{4}$/.test(year) ? year : undefined;
+  const index = await getContestIndex(requested);
+  const selected = Number(requested ?? index.contestYear) || index.years[0];
+  const posted = index.contests.filter((contest) => contest.hasResults);
+  const details = await mapPool(posted, 4, (contest) => getContest(contest.id));
+  const results = details.flatMap((contest) => (contest ? seasonResultsFromContest(contest) : []));
+  return {
+    year: selected,
+    years: index.years,
+    results,
+    contestsPosted: posted.length,
+  };
 }
 
 export async function getContest(id: number): Promise<ContestDetail | null> {

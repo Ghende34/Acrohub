@@ -34,6 +34,7 @@ npm test
 - `/pilots/5136` — a pilot profile (Gavin Henderson, when the roster still lists him) with season and category averages
 - `/scoresheets/176449` — a flight scoresheet (figure grades, K, averages, and totals) read inside Acrohub
 - `/judges` — judge experience, with rank agreement and pair agreement
+- `/stats` — highest averages, wins, best finishes, and best single scores for one contest year, filtered by airplane, category, region, class, and chapter
 - `/leaders` — regional series standings for the current contest year
 
 If `has_results` is false, or a contest JSON has no `category_results`, the contest page says results have not been posted.
