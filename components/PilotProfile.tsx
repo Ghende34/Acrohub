@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ExternalLink } from "@/components/ExternalLink";
 import { ScoreBar } from "@/components/ScoreBar";
-import { contestUrl, pilotScoresUrl, pilotUrl } from "@/lib/constants";
+import { contestUrl, pilotUrl } from "@/lib/constants";
 import { dateParts, formatPoints, formatPossible, isArchivalYear, placeWord, regionLabel, yearFromDate } from "@/lib/format";
 import { formatMean, pilotStats, profileYears } from "@/lib/pilot-stats";
 import type { PilotProfile as PilotProfileData } from "@/lib/types";
@@ -169,8 +169,8 @@ export function PilotProfile({ profile }: { profile: PilotProfileData }) {
                       {appearance.score?.horsConcours ? <span className="tag">Hors concours</span> : null}
                     </div>
                     <p className="detail-links" style={{ marginTop: "0.45rem" }}>
-                      <ExternalLink href={contestUrl(appearance.contestId)}>Contest</ExternalLink>
-                      <ExternalLink href={pilotScoresUrl(profile.id, appearance.contestId)}>Score sheet</ExternalLink>
+                      <Link href={`/pilots/${profile.id}/scores/${appearance.contestId}`}>Score sheets</Link>
+                      <ExternalLink href={contestUrl(appearance.contestId)}>Contest on IACCDB</ExternalLink>
                     </p>
                   </div>
                   <div className="score-block">

@@ -32,6 +32,7 @@ npm test
 - `/contests/1054` — category standings, podium, and judging comparison (Tequila Cup Glider is a useful glider example)
 - `/pilots` — search the IACCDB pilot roster by name and preview real scores
 - `/pilots/5136` — a pilot profile (Gavin Henderson, when the roster still lists him) with season and category averages
+- `/scoresheets/176449` — a flight scoresheet (figure grades, K, averages, and totals) read inside Acrohub
 - `/judges` — judge experience, with rank agreement and pair agreement
 - `/leaders` — regional series standings for the current contest year
 

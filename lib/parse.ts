@@ -6,6 +6,7 @@ import type {
   ContestSummary,
   FlightDetail,
   FlightPilotScore,
+  PilotFlightRecord,
   JudgeLeaders,
   JudgeLeaderRow,
   LineJudge,
@@ -231,6 +232,7 @@ export function parseFlight(raw: unknown): FlightDetail {
     const pilot = row as Record<string, unknown>;
     const person = (pilot.pilot ?? {}) as Record<string, unknown>;
     const score: FlightPilotScore = {
+      pilotFlightId: asNumber(pilot.id) ?? 0,
       pilotId: asNumber(person.id) ?? 0,
       name: cleanText(String(person.name ?? "")),
       penalty: asNumber(pilot.penalty_total) ?? 0,
@@ -249,8 +251,77 @@ export function parseFlight(raw: unknown): FlightDetail {
     id: asNumber(flight.id) ?? 0,
     sequence: asNumber(flight.sequence) ?? 0,
     name: cleanText(String(flight.name ?? "")),
+    contest: parseFlightContest(flight.contest),
     pilots,
     lineJudges,
+  };
+}
+
+function parseFlightContest(raw: unknown): FlightDetail["contest"] {
+  if (!raw || typeof raw !== "object") return null;
+  const contest = raw as Record<string, unknown>;
+  const url = String(contest.url ?? "");
+  const idMatch = url.match(/contests\/(\d+)/);
+  return {
+    id: idMatch ? Number(idMatch[1]) : null,
+    name: cleanText(String(contest.name ?? "")),
+    year: asNumber(contest.year),
+    start: String(contest.start ?? ""),
+  };
+}
+
+export function parsePilotFlight(raw: unknown): PilotFlightRecord {
+  const data = rewriteIaccdbLinks(raw) as { pilot_flight_data?: Record<string, unknown> };
+  const row = data.pilot_flight_data;
+  if (!row || asNumber(row.id) == null) throw new Error("Unexpected pilot flight payload");
+  const pilot = (row.pilot ?? {}) as Record<string, unknown>;
+  const airplane = (row.airplane ?? {}) as Record<string, unknown>;
+  const flight = (row.flight ?? {}) as Record<string, unknown>;
+  const sequence = (row.sequence ?? {}) as Record<string, unknown>;
+  const categories = Array.isArray(flight.categories) ? flight.categories : [];
+  const judges = (Array.isArray(row.grades) ? row.grades : []).map((grade) => {
+    const entry = grade as Record<string, unknown>;
+    const judge = (entry.judge ?? {}) as Record<string, unknown>;
+    const assistant = (entry.assistant ?? {}) as Record<string, unknown>;
+    const values = Array.isArray(entry.values) ? entry.values.map((value) => Number(value)) : [];
+    return {
+      id: asNumber(judge.id) ?? 0,
+      name: cleanText(String(judge.name ?? "")),
+      assistant: cleanText(String(assistant.name ?? "")),
+      values,
+    };
+  });
+  const kValues = Array.isArray(sequence.k_values) ? sequence.k_values.map((value) => Number(value)) : [];
+  return {
+    id: asNumber(row.id) ?? 0,
+    penalty: asNumber(row.penalty_total) ?? 0,
+    horsConcours: row.hors_concours === true,
+    chapter: row.chapter == null ? "" : String(row.chapter),
+    pilot: {
+      id: asNumber(pilot.id) ?? 0,
+      name: cleanText(String(pilot.name ?? "")),
+      iacId: asNumber(pilot.iac_id),
+    },
+    airplane: {
+      make: cleanText(String(airplane.make ?? "")),
+      model: cleanText(String(airplane.model ?? "")),
+      reg: cleanText(String(airplane.reg ?? "")),
+    },
+    flight: {
+      id: asNumber(flight.id) ?? 0,
+      name: cleanText(String(flight.name ?? "")),
+      categories: categories.map((category) => {
+        const item = category as Record<string, unknown>;
+        return {
+          name: cleanText(String(item.name ?? "")),
+          level: cleanText(String(item.level ?? "")),
+          aircat: String(item.aircat ?? ""),
+        };
+      }),
+    },
+    judges,
+    kValues,
+    totalK: asNumber(sequence.total_k),
   };
 }
 

@@ -82,6 +82,8 @@ export type ContestDetail = {
 
 /** One pilot on flights/{id}.json → flight.pilot_results. */
 export type FlightPilotScore = {
+  /** flights JSON pilot_results.id — the pilot_flights record. */
+  pilotFlightId: number;
   pilotId: number;
   name: string;
   penalty: number;
@@ -90,6 +92,13 @@ export type FlightPilotScore = {
   rank: number | null;
   rankBeforePenalties: number | null;
   totalPossible: number;
+};
+
+export type FlightContest = {
+  id: number | null;
+  name: string;
+  year: number | null;
+  start: string;
 };
 
 /** One judging line on flights/{id}.json → flight.line_judges. */
@@ -115,8 +124,26 @@ export type FlightDetail = {
   id: number;
   sequence: number;
   name: string;
+  contest: FlightContest | null;
   pilots: FlightPilotScore[];
   lineJudges: LineJudge[];
+};
+
+export type PilotFlightRecord = {
+  id: number;
+  penalty: number;
+  horsConcours: boolean;
+  chapter: string;
+  pilot: { id: number; name: string; iacId: number | null };
+  airplane: { make: string; model: string; reg: string };
+  flight: {
+    id: number;
+    name: string;
+    categories: { name: string; level: string; aircat: string }[];
+  };
+  judges: { id: number; name: string; assistant: string; values: number[] }[];
+  kValues: number[];
+  totalK: number | null;
 };
 
 export type PilotHit = {

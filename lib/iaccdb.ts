@@ -5,11 +5,13 @@ import {
   parseContestIndex,
   parseFlight,
   parseJudgeLeaders,
+  parsePilotFlight,
   parsePilotIndex,
   parsePilotPage,
   parseRegionalSeries,
   searchPilots,
 } from "./parse";
+import { computeScoresheet, type Scoresheet } from "./scoresheet";
 import { matchPilotScore, toPilotScore } from "./scores";
 import type {
   ContestDetail,
@@ -17,6 +19,7 @@ import type {
   JudgeLeaders,
   ParsedAppearance,
   PilotAppearance,
+  PilotFlightRecord,
   PilotHit,
   PilotProfile,
   RegionalSeries,
@@ -146,6 +149,81 @@ export async function getFlight(id: number): Promise<FlightDetail | null> {
     console.error(`Flight ${id} unavailable`);
     return null;
   }
+}
+
+export type ScoresheetView = {
+  pilotFlightId: number;
+  pilot: PilotFlightRecord["pilot"];
+  airplane: PilotFlightRecord["airplane"];
+  chapter: string;
+  horsConcours: boolean;
+  flightId: number;
+  flightName: string;
+  categoryName: string;
+  contestId: number | null;
+  contestName: string;
+  contestYear: number | null;
+  rank: number | null;
+  judges: { name: string; assistant: string }[];
+  sheet: Scoresheet;
+};
+
+export async function getPilotFlight(id: number): Promise<PilotFlightRecord | null> {
+  if (!Number.isInteger(id) || id <= 0) return null;
+  try {
+    return parsePilotFlight(await readJson(`/pilot_flights/${id}.json`));
+  } catch (error) {
+    if (error instanceof UpstreamError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export async function getScoresheet(id: number): Promise<ScoresheetView | null> {
+  const record = await getPilotFlight(id);
+  if (!record) return null;
+  const flight = record.flight.id > 0 ? await getFlight(record.flight.id) : null;
+  const standing = flight?.pilots.find((pilot) => pilot.pilotFlightId === record.id);
+  const sheet = computeScoresheet({
+    judges: record.judges,
+    kValues: record.kValues,
+    penalty: record.penalty,
+    year: flight?.contest?.year ?? null,
+    totalPossible: standing?.totalPossible ?? null,
+  });
+  return {
+    pilotFlightId: record.id,
+    pilot: record.pilot,
+    airplane: record.airplane,
+    chapter: record.chapter,
+    horsConcours: record.horsConcours,
+    flightId: record.flight.id,
+    flightName: record.flight.name,
+    categoryName: record.flight.categories.map((category) => category.name).filter(Boolean).join(", "),
+    contestId: flight?.contest?.id ?? null,
+    contestName: flight?.contest?.name ?? "",
+    contestYear: flight?.contest?.year ?? null,
+    rank: standing?.rank ?? null,
+    judges: record.judges.map((judge) => ({ name: judge.name, assistant: judge.assistant })),
+    sheet,
+  };
+}
+
+export async function getPilotContestSheets(pilotId: number, contestId: number): Promise<ScoresheetView[]> {
+  const contest = await getContest(contestId);
+  if (!contest) return [];
+  const jobs = contest.categoryResults.flatMap((category) =>
+    category.pilots.some((pilot) => pilot.id === pilotId)
+      ? category.flights.map((flight) => flight.id)
+      : [],
+  );
+  const uniqueFlights = [...new Set(jobs)];
+  const sheets = await mapPool(uniqueFlights, 4, async (flightId) => {
+    const flight = await getFlight(flightId);
+    const standing = flight?.pilots.find((pilot) => pilot.pilotId === pilotId);
+    if (!standing || standing.pilotFlightId <= 0) return null;
+    return getScoresheet(standing.pilotFlightId);
+  });
+  return sheets.filter((sheet): sheet is ScoresheetView => sheet != null);
 }
 
 export async function searchPilotIndex(query: string): Promise<{ total: number; pilots: PilotHit[] }> {

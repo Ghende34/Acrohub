@@ -6,7 +6,7 @@ import { ExternalLink } from "@/components/ExternalLink";
 import { JudgingPanel } from "@/components/JudgingPanel";
 import { ScoreBar } from "@/components/ScoreBar";
 import { groupCategories } from "@/lib/categories";
-import { contestUrl, flightUrl, notesUrl, pilotScoresUrl, pilotUrl } from "@/lib/constants";
+import { contestUrl, notesUrl, pilotUrl } from "@/lib/constants";
 import {
   airplaneLine,
   dateParts,
@@ -299,8 +299,8 @@ function Standings({
             {open ? (
               <div className="detail" id={`pilot-panel-${pilot.id}`}>
                 <div className="detail-links">
+                  <Link href={`/pilots/${pilot.id}/scores/${contestId}`}>Score sheets</Link>
                   <ExternalLink href={pilotUrl(pilot.id)}>Pilot on IACCDB</ExternalLink>
-                  <ExternalLink href={pilotScoresUrl(pilot.id, contestId)}>Score sheet</ExternalLink>
                   {pilot.iacId ? <span className="meta">IAC {pilot.iacId}</span> : null}
                 </div>
                 {category.flights.length === 0 ? <p className="note">No flight records are attached to this category.</p> : null}
@@ -331,7 +331,10 @@ function Standings({
                           {score.rankBeforePenalties != null ? `, rank ${score.rankBeforePenalties}` : ""}
                         </p>
                       ) : null}
-                      <ExternalLink href={flightUrl(flight.id)}>{flight.name} flight on IACCDB</ExternalLink>
+                      {score.pilotFlightId > 0 ? (
+                        <Link href={`/scoresheets/${score.pilotFlightId}`}>{flight.name} scoresheet</Link>
+                      ) : null}
+                      <Link href={`/flights/${flight.id}`}>{flight.name} flight</Link>
                     </div>
                   );
                 })}

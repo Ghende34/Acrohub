@@ -5,6 +5,7 @@ import {
   parseContestIndex,
   parseFlight,
   parseJudgeLeaders,
+  parsePilotFlight,
   parsePilotIndex,
   parsePilotPage,
   parseRegionalSeries,
@@ -134,6 +135,38 @@ test("parses a flight and drops the nbsp in pilot names", () => {
   assert.equal(flight.pilots[0].name, "Jonathan Lupian");
   assert.equal(flight.pilots[0].score, "947.67");
   assert.deepEqual(flight.lineJudges, []);
+});
+
+test("parses a pilot flight scoresheet payload", () => {
+  const record = parsePilotFlight({
+    pilot_flight_data: {
+      id: 176449,
+      penalty_total: 0,
+      chapter: "12",
+      hors_concours: false,
+      pilot: { id: 5456, name: "Jonathan\u00a0Lupian", iac_id: 443660 },
+      airplane: { make: "dg", model: "1000", reg: "USAF" },
+      flight: {
+        id: 26490,
+        name: "Known",
+        url: "http://localhost:3000/flights/26490.json",
+        categories: [{ sequence: 7, aircat: "G", name: "Sportsman Glider", level: "sportsman" }],
+      },
+      grades: [
+        {
+          values: [-10, 80],
+          judge: { id: 708, name: "Barrett\u00a0Hines", url: "http://localhost:3000/judges/708.json" },
+          assistant: { id: 1, name: "Brian\u00a0Pham" },
+        },
+      ],
+      sequence: { k_values: [12, 16], total_k: 28 },
+    },
+  });
+  assert.equal(record.pilot.name, "Jonathan Lupian");
+  assert.equal(record.judges[0].values[0], -10);
+  assert.equal(record.judges[0].assistant, "Brian Pham");
+  assert.deepEqual(record.kValues, [12, 16]);
+  assert.equal(record.flight.categories[0].name, "Sportsman Glider");
 });
 
 test("parses flight judging lines with the published rho and gamma", () => {
