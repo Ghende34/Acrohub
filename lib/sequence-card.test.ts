@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { alignCard, familyName, parseSequenceItems, publishedCaptions, type TextItem } from "./sequence-card";
+import { alignCard, figureName, parseSequenceItems, publishedCaptions, type TextItem } from "./sequence-card";
 
 const SPORTSMAN_K = [10, 13, 14, 10, 11, 10, 4, 17, 10, 17, 11, 10];
 
@@ -15,13 +15,26 @@ test("2026 power sportsman known names match the published K list", () => {
   assert.ok(labeled);
   assert.equal(labeled.source, "2026 IAC Power Sportsman Known");
   assert.equal(labeled.captions.length, 12);
-  assert.equal(labeled.captions[0]?.name, "Single line");
-  assert.equal(labeled.captions[0]?.catalog, "1.1.6.1");
-  assert.equal(labeled.captions[2]?.name, "Half Cuban");
+  assert.deepEqual(
+    labeled.captions.slice(0, 11).map((caption) => caption?.name),
+    [
+      "Vertical line",
+      "1½ spin",
+      "Half Cuban",
+      "Half loop with ½ roll",
+      "Half loop with 2 of 4",
+      "Loop",
+      "180° turn",
+      "Hammerhead",
+      "1 roll",
+      "Vertical up, 45° down with ½ roll",
+      "Half loop with 2 of 4",
+    ],
+  );
+  assert.equal(labeled.captions[1]?.catalog, "1.1.6.3 + 9.11.1.6");
   assert.equal(labeled.captions[2]?.catalog, "8.5.6.1 + 9.1.4.2");
-  assert.equal(labeled.captions[7]?.name, "Stall turn");
-  assert.equal(labeled.captions[10]?.catalog, "7.2.2.1 + 9.4.3.2");
   assert.equal(labeled.captions[11], null);
+  assert.equal(figureName(["1.1.6.3", "9.11.1.6"]), "1½ spin");
 });
 
 test("other contest years use that year's published Known", () => {
@@ -69,7 +82,7 @@ test("sequence card text lines up only when every figure K matches", () => {
   assert.ok(card);
   assert.deepEqual(card.figures.map((figure) => figure.k), SPORTSMAN_K.slice(0, -1));
   assert.equal(card.presentationK, 10);
-  assert.equal(familyName(["5.2.1.1"]), "Stall turn");
+  assert.equal(figureName(["5.2.1.1"]), "Hammerhead");
   const aligned = alignCard(SPORTSMAN_K, card);
   assert.ok(!("error" in aligned));
   const wrong = alignCard([10, 13, 14, 99, 11, 10, 4, 17, 10, 17, 11, 10], card);

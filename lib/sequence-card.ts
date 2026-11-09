@@ -61,11 +61,87 @@ const FAMILIES: [string, string][] = [
 
 const CATALOG = /^(?:\d+\.\d+\.\d+\.\d+|0\.1(?:\.\d+)?)$/;
 
-export function familyName(catalogs: string[]): string | null {
-  const base = catalogs.find((catalog) => !catalog.startsWith("9."));
-  if (!base) return null;
+const ROLL_AMOUNT: Record<number, string> = {
+  1: "¼",
+  2: "½",
+  3: "¾",
+  4: "1",
+  5: "1¼",
+  6: "1½",
+  7: "1¾",
+  8: "2",
+};
+
+/** Pilot-style name from every catalog number, including family 9 rolls, snaps, and spins. */
+export function figureName(catalogs: string[]): string | null {
+  const rolls = catalogs.filter((catalog) => catalog.startsWith("9."));
+  const bases = catalogs.filter((catalog) => !catalog.startsWith("9."));
+  const phrases = rolls.map(rollPhrase).filter((phrase): phrase is string => Boolean(phrase));
+  const spin = phrases.find((phrase) => phrase.endsWith("spin"));
+  if (spin && bases.every(isSpinEntry)) return spin;
+  const base = bases.map(baseName).find((name): name is string => Boolean(name)) ?? null;
+  if (base === "Half Cuban" && phrases.length === 1 && phrases[0] === "½ roll") return "Half Cuban";
+  if (base === "Horizontal line" && phrases.length === 1) return phrases[0];
+  if (base && phrases.length > 0) return `${base} with ${phrases.join(" and ")}`;
+  if (phrases.length > 0) return phrases.join(" and ");
+  return base;
+}
+
+function rollPhrase(catalog: string): string | null {
+  const parts = catalog.split(".").map(Number);
+  if (parts[0] !== 9 || parts.length < 4) return null;
+  const family = parts[1];
+  const extent = parts[3];
+  const amount = ROLL_AMOUNT[extent];
+  if (!amount) return null;
+  if (family === 11) return `${amount} spin`;
+  if (family === 12) return `${amount} inverted spin`;
+  if (family === 9) return `${amount} snap`;
+  if (family === 10) return `${amount} negative snap`;
+  if (family === 4) return `${extent} of 4`;
+  if (family === 8) return `${extent} of 8`;
+  if (family === 2) return `${amount} 2-point roll`;
+  if (family === 1) return amount === "1" ? "1 roll" : `${amount} roll`;
+  return null;
+}
+
+function isSpinEntry(catalog: string): boolean {
+  return /^1\.1\.[67]\./.test(catalog);
+}
+
+function baseName(catalog: string): string | null {
+  if (catalog === "0.1" || catalog.startsWith("0.1.")) return "Spin";
+  const [family, group, shape] = catalog.split(".").map(Number);
+  if (family === 1 && group === 1) {
+    if (shape === 1) return "Horizontal line";
+    if (shape === 2 || shape === 3 || shape === 4 || shape === 5) return "45° line";
+    if (shape === 6 || shape === 7) return "Vertical line";
+    return "135° line";
+  }
+  if (family === 1 && group === 2) {
+    if (shape >= 1 && shape <= 4) return "45° up, vertical down";
+    if (shape >= 5 && shape <= 8) return "Vertical up, 45° down";
+    return "Two lines";
+  }
+  if (family === 1 && group === 3) return "Three lines";
+  if (family === 2 && group === 1) return "90° turn";
+  if (family === 2 && group === 2) return "180° turn";
+  if (family === 2 && group === 3) return "270° turn";
+  if (family === 2 && group === 4) return "360° turn";
+  if (family === 5) return "Hammerhead";
+  if (family === 6) return "Tailslide";
+  if (family === 7 && group === 2) return "Half loop";
+  if (family === 7 && group === 3) return "Three-quarter loop";
+  if (family === 7 && group === 4) return "Loop";
+  if (family === 7 && group === 5) return "S";
+  if (family === 7 && group === 8) return "Eight";
+  if (family === 8 && group === 4) return "Humpty";
+  if (family === 8 && group === 5) return "Half Cuban";
+  if (family === 8 && group === 6) return "P-loop";
+  if (family === 8 && group === 7) return "Q-loop";
+  if (family === 8 && group === 8) return "Double humpty";
   for (const [prefix, name] of FAMILIES) {
-    if (base === prefix || base.startsWith(`${prefix}.`)) return name;
+    if (catalog === prefix || catalog.startsWith(`${prefix}.`)) return name;
   }
   return null;
 }
@@ -134,7 +210,7 @@ export function alignCard(
     };
   }
   const captions: FigureCaption[] = card.figures.map((figure) => ({
-    name: figure.name,
+    name: figureName(figure.catalog) ?? figure.name,
     catalog: figure.catalog.join(" + "),
   }));
   if (withPresentation) captions.push(null);
@@ -206,7 +282,7 @@ export function parseSequenceItems(items: TextItem[]): SequenceCard | null {
     const sum = group.reduce((totalK, figure) => totalK + (figure.k ?? 0), 0);
     if (sum !== current.k) return null;
     const catalog = group.map((figure) => figure.catalog);
-    figures.push({ name: familyName(catalog), catalog, k: current.k });
+    figures.push({ name: figureName(catalog), catalog, k: current.k });
   }
   return { presentationK, source: "Uploaded sequence card", figures };
 }

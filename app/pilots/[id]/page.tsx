@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { SeasonBook } from "@/components/SeasonBook";
 import { getContestIndex, getPilotProfile, getPilotSeason } from "@/lib/iaccdb";
 import { profileYears } from "@/lib/pilot-stats";
+import { findRegistrationPhoto } from "@/lib/registration-photo";
 
 export const dynamic = "force-dynamic";
 
@@ -46,9 +47,13 @@ export default async function PilotPage({
       ? new Date().getUTCFullYear()
       : (years[0] ?? index?.contestYear ?? new Date().getUTCFullYear());
   const book = await getPilotSeason(profile, year);
+  const regs = [...new Set(book.contests.map((contest) => contest.reg).filter(Boolean))];
+  const photos = Object.fromEntries(
+    await Promise.all(regs.map(async (reg) => [reg, await findRegistrationPhoto(reg)] as const)),
+  );
   return (
     <div className="wrap stack">
-      <SeasonBook profile={profile} book={book} years={years.length > 0 ? years : [year]} />
+      <SeasonBook profile={profile} book={book} years={years.length > 0 ? years : [year]} photos={photos} />
     </div>
   );
 }

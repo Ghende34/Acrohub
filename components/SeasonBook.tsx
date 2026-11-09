@@ -6,17 +6,20 @@ import { ExternalLink } from "@/components/ExternalLink";
 import { pilotUrl } from "@/lib/constants";
 import { dateParts, formatPoints, formatPossible, isArchivalYear, placeWord, regionLabel } from "@/lib/format";
 import { formatMean } from "@/lib/pilot-stats";
-import type { SeasonBook as SeasonBookData } from "@/lib/season-book";
+import { groupSeasonContests, type SeasonBook as SeasonBookData, type SeasonContest } from "@/lib/season-book";
+import type { PlanePhoto } from "@/lib/airplane-media";
 import type { PilotProfile } from "@/lib/types";
 
 export function SeasonBook({
   profile,
   book,
   years,
+  photos = {},
 }: {
   profile: PilotProfile;
   book: SeasonBookData;
   years: number[];
+  photos?: Record<string, PlanePhoto | null>;
 }) {
   const peak = Math.max(100, ...book.trend.map((item) => item.percent));
 
@@ -142,44 +145,56 @@ export function SeasonBook({
           </div>
         ) : (
           <ol className="book">
-            {book.contests.map((contest) => {
+            {groupSeasonContests(book.contests).map((group) => {
+              const contest = group[0];
               const date = dateParts(contest.date);
+              const planes = uniquePlanes(group);
               return (
-                <li key={`${contest.contestId}-${contest.categoryName}`} className="book-contest">
+                <li key={contest.contestId} className="book-contest">
                   <p className="kicker">{`${date.label} · ${regionLabel(contest.region)}`}</p>
                   <h3>
                     <Link href={`/contests/${contest.contestId}`}>{contest.name}</Link>
                   </h3>
-                  <p className="meta">
-                    {contest.categoryName}
-                    {contest.rank != null ? ` · ${placeWord(contest.rank)}` : ""}
-                    {contest.horsConcours ? " · hors concours" : ""}
-                    {contest.starQualifying ? " · star-qualifying flag" : ""}
-                  </p>
-                  {contest.make || contest.reg ? (
-                    <AirplaneFace make={contest.make} model={contest.model} reg={contest.reg} />
-                  ) : null}
-                  {contest.percent != null ? <ScoreBar percent={contest.percent} /> : null}
-                  <p className="points">
-                    {contest.percentLabel ?? "No percentage"}
-                    {contest.points ? ` · ${formatPoints(contest.points)} / ${formatPossible(contest.totalPossible)}` : ""}
-                  </p>
-                  {contest.flights.length > 0 ? (
-                    <ul className="flight-list">
-                      {contest.flights.map((flight) => (
-                        <li key={flight.pilotFlightId}>
-                          <Link href={`/scoresheets/${flight.pilotFlightId}`}>{flight.name || "Flight"}</Link>
-                          <span className="meta">
-                            {flight.percentLabel ?? "—"}
-                            {flight.rank != null ? ` · ${placeWord(flight.rank)} on the flight` : ""}
-                          </span>
-                          {flight.percent != null ? <ScoreBar percent={flight.percent} /> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="meta">Flight scoresheets are not in the published record for this appearance.</p>
-                  )}
+                  {planes.map((plane) => (
+                    <AirplaneFace
+                      key={`${plane.reg}-${plane.make}`}
+                      make={plane.make}
+                      model={plane.model}
+                      reg={plane.reg}
+                      tailPhoto={plane.reg ? (photos[plane.reg] ?? null) : null}
+                    />
+                  ))}
+                  {group.map((category) => (
+                    <div key={category.categoryName}>
+                      <p className="meta">
+                        {category.categoryName}
+                        {category.rank != null ? ` · ${placeWord(category.rank)}` : ""}
+                        {category.horsConcours ? " · hors concours" : ""}
+                        {category.starQualifying ? " · star-qualifying flag" : ""}
+                      </p>
+                      {category.percent != null ? <ScoreBar percent={category.percent} /> : null}
+                      <p className="points">
+                        {category.percentLabel ?? "No percentage"}
+                        {category.points ? ` · ${formatPoints(category.points)} / ${formatPossible(category.totalPossible)}` : ""}
+                      </p>
+                      {category.flights.length > 0 ? (
+                        <ul className="flight-list">
+                          {category.flights.map((flight) => (
+                            <li key={flight.pilotFlightId}>
+                              <Link href={`/scoresheets/${flight.pilotFlightId}`}>{flight.name || "Flight"}</Link>
+                              <span className="meta">
+                                {flight.percentLabel ?? "—"}
+                                {flight.rank != null ? ` · ${placeWord(flight.rank)} on the flight` : ""}
+                              </span>
+                              {flight.percent != null ? <ScoreBar percent={flight.percent} /> : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="meta">Flight scoresheets are not in the published record for this appearance.</p>
+                      )}
+                    </div>
+                  ))}
                 </li>
               );
             })}
@@ -191,6 +206,19 @@ export function SeasonBook({
       ) : null}
     </article>
   );
+}
+
+function uniquePlanes(group: SeasonContest[]): SeasonContest[] {
+  const seen = new Set<string>();
+  const planes: SeasonContest[] = [];
+  for (const contest of group) {
+    if (!contest.make && !contest.reg) continue;
+    const key = `${contest.reg}|${contest.make}|${contest.model}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    planes.push(contest);
+  }
+  return planes;
 }
 
 function FigureList({ figures }: { figures: SeasonBookData["strengths"] }) {

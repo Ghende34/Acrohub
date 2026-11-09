@@ -5,10 +5,11 @@ import { useEffect, useState } from "react";
 import { AirplaneFace } from "@/components/AirplaneFace";
 import { airplaneLine, placeWord } from "@/lib/format";
 import type { ScoresheetView } from "@/lib/iaccdb";
+import type { PlanePhoto } from "@/lib/airplane-media";
 import type { FigureCaption } from "@/lib/sequence-card";
 import type { Mark } from "@/lib/scoresheet";
 
-export function ScoresheetTable({ view }: { view: ScoresheetView }) {
+export function ScoresheetTable({ view, tailPhoto }: { view: ScoresheetView; tailPhoto?: PlanePhoto | null }) {
   const { sheet } = view;
   const judgeCount = view.judges.length;
   const [uploaded, setUploaded] = useState<{ source: string; captions: FigureCaption[] } | null>(null);
@@ -49,7 +50,7 @@ export function ScoresheetTable({ view }: { view: ScoresheetView }) {
           {view.rank != null ? <span>{placeWord(view.rank)} on this flight</span> : null}
           {view.horsConcours ? <span>Hors concours</span> : null}
         </p>
-        <AirplaneFace make={view.airplane.make} model={view.airplane.model} reg={view.airplane.reg} size="full" />
+        <AirplaneFace make={view.airplane.make} model={view.airplane.model} reg={view.airplane.reg} size="full" tailPhoto={tailPhoto} />
         {source ? (
           <p className="note">
             {source === "Uploaded sequence card"

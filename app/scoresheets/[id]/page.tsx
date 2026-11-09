@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ScoresheetTable } from "@/components/ScoresheetTable";
 import { getScoresheet } from "@/lib/iaccdb";
+import { findRegistrationPhoto } from "@/lib/registration-photo";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +27,10 @@ export default async function ScoresheetPage({ params }: { params: Promise<{ id:
   if (!/^\d+$/.test(id)) notFound();
   const sheet = await getScoresheet(Number(id));
   if (!sheet) notFound();
+  const tailPhoto = sheet.airplane.reg ? await findRegistrationPhoto(sheet.airplane.reg) : null;
   return (
     <div className="wrap stack">
-      <ScoresheetTable view={sheet} />
+      <ScoresheetTable view={sheet} tailPhoto={tailPhoto} />
     </div>
   );
 }

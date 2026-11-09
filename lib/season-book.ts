@@ -58,6 +58,22 @@ export type SeasonBook = {
 
 const FLIGHT_ORDER = ["known", "free", "unknown"];
 
+/** One block per competition, even when a pilot flew more than one category there. */
+export function groupSeasonContests(contests: SeasonContest[]): SeasonContest[][] {
+  const groups: SeasonContest[][] = [];
+  const index = new Map<number, SeasonContest[]>();
+  for (const contest of contests) {
+    const existing = index.get(contest.contestId);
+    if (existing) existing.push(contest);
+    else {
+      const group = [contest];
+      index.set(contest.contestId, group);
+      groups.push(group);
+    }
+  }
+  return groups;
+}
+
 export function buildSeasonBook(year: number, contests: SeasonContest[]): SeasonBook {
   const ordered = [...contests].sort((a, b) => a.date.localeCompare(b.date) || a.contestId - b.contestId);
   for (const contest of ordered) {

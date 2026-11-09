@@ -34,7 +34,7 @@ npm test
 - `/pilots/5136` — a pilot profile (Gavin Henderson, when the roster still lists him) with season and category averages
 - `/scoresheets/176449` — a flight scoresheet (figure grades, K, averages, and totals) read inside Acrohub
 - `/judges` — judge experience, with rank agreement and pair agreement
-- `/stats` — highest averages, wins, best finishes, and best single scores for one contest year. Airplane filters use a canonical type, so Extra 300L, Pitts S-2B, and Super Decathlon spellings group together. A type photo and a rendering show beside the airplane.
+- `/stats` — highest averages, wins, best finishes, and best single scores for one contest year. Airplane filters use a canonical type, so Extra 300L, Pitts S-2B, and Super Decathlon spellings group together. A photo of that registration is shown beside a type rendering when a licensed or Airport-Data photo exists; otherwise the photo is labeled as a type example.
 - A pilot page is a season book for one contest year: contests, category results, flights, in-app scoresheets, season average, best and weakest contest and flight, a trend, figure notes, and IACCDB star-qualifying flags
 - Scoresheet figure names fill in on their own when the published IAC sequence for that year and category matches the flight’s K list. A sequence-card PDF is only a hidden fallback for a Free or Unknown that was never published
 - `/watch` — a device watch list for contests and pilots. Acrohub checks the cached record about every 10 minutes while the site is open, and again when you return

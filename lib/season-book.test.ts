@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildSeasonBook, type SeasonContest } from "./season-book";
+import { buildSeasonBook, groupSeasonContests, type SeasonContest } from "./season-book";
 
 function contest(partial: Partial<SeasonContest> & Pick<SeasonContest, "contestId" | "percent">): SeasonContest {
   return {
@@ -22,6 +22,16 @@ function contest(partial: Partial<SeasonContest> & Pick<SeasonContest, "contestI
     ...partial,
   };
 }
+
+test("a contest with several categories keeps one group", () => {
+  const early = contest({ contestId: 9, name: "Cup", date: "2026-04-01", percent: 70, categoryName: "Sportsman Power" });
+  const later = contest({ contestId: 9, name: "Cup", date: "2026-04-01", percent: 80, categoryName: "Intermediate Power" });
+  const other = contest({ contestId: 10, name: "Other", date: "2026-05-01", percent: 75 });
+  const groups = groupSeasonContests([early, later, other]);
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0]?.length, 2);
+  assert.equal(groups[1]?.[0]?.contestId, 10);
+});
 
 test("season average skips hors concours and names best and weakest", () => {
   const book = buildSeasonBook(2026, [
