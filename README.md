@@ -35,6 +35,8 @@ npm test
 - `/scoresheets/176449` — a flight scoresheet (figure grades, K, averages, and totals) read inside Acrohub
 - `/judges` — judge experience, with rank agreement and pair agreement
 - `/stats` — highest averages, wins, best finishes, and best single scores for one contest year. Airplane filters use a canonical type, so Extra 300L, Pitts S-2B, and Super Decathlon spellings group together. A type photo and a rendering show beside the airplane.
+- A pilot page is a season book for one contest year: contests, category results, flights, in-app scoresheets, season average, best and weakest contest and flight, a trend, figure notes, and IACCDB star-qualifying flags
+- `/watch` — a device watch list for contests and pilots. Acrohub checks the cached record about every 10 minutes while the site is open, and again when you return
 - `/leaders` — regional series standings for the current contest year
 
 If `has_results` is false, or a contest JSON has no `category_results`, the contest page says results have not been posted.

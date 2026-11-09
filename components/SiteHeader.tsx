@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/judges", label: "Judges", match: (path: string) => path.startsWith("/judges") },
   { href: "/stats", label: "Stats", match: (path: string) => path.startsWith("/stats") },
   { href: "/leaders", label: "Regions", match: (path: string) => path.startsWith("/leaders") },
+  { href: "/watch", label: "Watch", match: (path: string) => path.startsWith("/watch") },
 ];
 
 export function SiteHeader() {

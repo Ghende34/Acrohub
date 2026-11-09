@@ -1,5 +1,6 @@
 import https from "node:https";
 import { CACHE_TTL_MS, IACCDB_ORIGIN, PILOT_SCORE_FETCH_LIMIT } from "./constants";
+import { buildSeasonBook, figureAverage, sheetPercent, type SeasonBook, type SeasonContest, type SeasonFigure } from "./season-book";
 import { mapPool } from "./pool";
 import {
   parseContestDetail,
@@ -306,6 +307,81 @@ export async function searchPilotIndex(query: string): Promise<{ total: number; 
   const response = await readHtml("/pilots");
   if (!response.ok) throw new UpstreamError("Pilot index unavailable", response.status || 502);
   return searchPilots(parsePilotIndex(response.body), trimmed, 25);
+}
+
+export async function getPilotSeason(profile: PilotProfile, year: number): Promise<SeasonBook> {
+  const selected = profile.appearances.filter((appearance) => appearance.date.startsWith(`${year}-`));
+  const loaded = await mapPool(selected, 4, async (appearance) =>
+    appearance.score ? appearance : enrichAppearance(appearance, profile.id),
+  );
+  const contestIds = [...new Set(loaded.map((appearance) => appearance.contestId))];
+  const sheets = new Map<number, ScoresheetView[]>();
+  await mapPool(contestIds, 2, async (contestId) => {
+    sheets.set(contestId, await getPilotContestSheets(profile.id, contestId));
+  });
+  const contests: SeasonContest[] = loaded.map((appearance) => {
+    const related = (sheets.get(appearance.contestId) ?? []).filter((sheet) =>
+      categoriesMatch(sheet.categoryName, appearance.categoryName),
+    );
+    const figures: SeasonFigure[] = related.flatMap((sheet) =>
+      sheet.sheet.figures.flatMap((figure) => {
+        const average = figureAverage(figure.average);
+        if (average == null) return [];
+        return [
+          {
+            contestId: appearance.contestId,
+            contestName: appearance.contestName,
+            flightName: sheet.flightName || "Flight",
+            pilotFlightId: sheet.pilotFlightId,
+            figure: figure.label === "P" ? "Presentation" : figure.label,
+            average,
+            k: figure.k,
+          },
+        ];
+      }),
+    );
+    return {
+      contestId: appearance.contestId,
+      name: appearance.contestName,
+      date: appearance.date,
+      region: appearance.region,
+      categoryName: appearance.categoryName,
+      rank: appearance.score?.rank ?? null,
+      percentLabel: appearance.score?.percent && appearance.score.percent !== "—" ? appearance.score.percent : null,
+      percent: readPercent(appearance.score?.percent),
+      points: appearance.score?.points ?? "",
+      totalPossible: appearance.score?.totalPossible ?? 0,
+      horsConcours: appearance.score?.horsConcours ?? false,
+      starQualifying: appearance.score?.starQualifying ?? false,
+      make: appearance.score?.airplane ?? "",
+      model: "",
+      reg: appearance.score?.reg ?? "",
+      flights: related.map((sheet) => ({
+        pilotFlightId: sheet.pilotFlightId,
+        flightId: sheet.flightId,
+        name: sheet.flightName || "Flight",
+        percentLabel: sheet.sheet.percent,
+        percent: sheetPercent(sheet.sheet.percent),
+        rank: sheet.rank,
+        horsConcours: sheet.horsConcours,
+      })),
+      figures,
+    };
+  });
+  return buildSeasonBook(year, contests);
+}
+
+function readPercent(label: string | null | undefined): number | null {
+  if (!label || !label.endsWith("%")) return null;
+  const value = Number(label.slice(0, -1));
+  return Number.isFinite(value) ? value : null;
+}
+
+function categoriesMatch(sheetCategory: string, appearanceCategory: string): boolean {
+  const sheet = sheetCategory.toLowerCase();
+  const appearance = appearanceCategory.toLowerCase();
+  if (!sheet || !appearance) return true;
+  return sheet.includes(appearance) || appearance.includes(sheet);
 }
 
 export async function getPilotProfile(id: number): Promise<PilotProfile | null> {

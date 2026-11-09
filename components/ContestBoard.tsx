@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AirplaneFace } from "@/components/AirplaneFace";
 import { ExternalLink } from "@/components/ExternalLink";
+import { WatchButton } from "@/components/WatchButton";
 import { JudgingPanel } from "@/components/JudgingPanel";
 import { ScoreBar } from "@/components/ScoreBar";
 import { groupCategories } from "@/lib/categories";
@@ -105,6 +106,7 @@ export function ContestBoard({
           {contest.director ? <span className="fact">Contest director {contest.director}</span> : null}
         </div>
         <div className="actions">
+          <WatchButton kind="contest" id={contest.id} name={contest.name} />
           <ExternalLink href={contestUrl(contest.id)}>View on IACCDB</ExternalLink>
           <Link href={`/?year=${contest.year || ""}`}>Back to {contest.year}</Link>
         </div>

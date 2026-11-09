@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Outfit } from "next/font/google";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { WatchManager } from "@/components/WatchManager";
 import "./globals.css";
 
 const display = Barlow_Condensed({
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${display.variable} ${sans.variable}`}>
         <div className="stripe" aria-hidden="true" />
         <SiteHeader />
+        <WatchManager />
         <main id="content">{children}</main>
         <SiteFooter />
       </body>
