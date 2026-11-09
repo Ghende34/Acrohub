@@ -24,6 +24,28 @@ test("2026 power sportsman known names match the published K list", () => {
   assert.equal(labeled.captions[11], null);
 });
 
+test("other contest years use that year's published Known", () => {
+  const sequences = JSON.parse(
+    readFileSync(new URL("./fixtures/published-sequences.json", import.meta.url), "utf8"),
+  ) as { year: number; aircat: string; level: string; program: string; presentationK: number; figures: { k: number }[]; source: string }[];
+  const sportsman2025 = sequences.find(
+    (sequence) => sequence.year === 2025 && sequence.aircat === "P" && sequence.level === "sportsman" && sequence.program === "known",
+  );
+  assert.ok(sportsman2025);
+  const kValues = [...sportsman2025.figures.map((figure) => figure.k), sportsman2025.presentationK];
+  const labeled = publishedCaptions({
+    year: 2025,
+    categoryName: "Sportsman Power",
+    flightName: "Known",
+    kValues,
+  });
+  assert.equal(labeled?.source, "2025 IAC Power Sportsman Known");
+  assert.equal(
+    publishedCaptions({ year: 2026, categoryName: "Sportsman Power", flightName: "Known", kValues }),
+    null,
+  );
+});
+
 test("a K mismatch or a Free flight does not receive known names", () => {
   const shifted = [...SPORTSMAN_K];
   shifted[3] = 12;

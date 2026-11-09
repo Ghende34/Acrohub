@@ -275,6 +275,7 @@ export async function getScoresheet(id: number): Promise<ScoresheetView | null> 
     year: contestYear,
     categoryName,
     flightName: record.flight.name,
+    contestName: flight?.contest?.name ?? "",
     kValues: record.kValues,
   });
   return {

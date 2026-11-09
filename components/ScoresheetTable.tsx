@@ -53,21 +53,11 @@ export function ScoresheetTable({ view }: { view: ScoresheetView }) {
         {source ? (
           <p className="note">
             {source === "Uploaded sequence card"
-              ? "Figure names from the uploaded sequence card. They stay on this browser after reload."
-              : `Figure names from the ${source}.`}{" "}
+              ? "Figure names from a sequence card saved on this browser."
+              : `Figure names filled in from the ${source}.`}{" "}
             Presentation stays presentation.
           </p>
-        ) : (
-          <p className="note">Figure rows are numbered until a published Known matches this K list, or a sequence card is uploaded.</p>
-        )}
-        <SequenceUpload
-          pilotFlightId={view.pilotFlightId}
-          kValues={view.kValues}
-          storageKey={storageKey}
-          onApply={(next) => setUploaded(next)}
-          onClear={() => setUploaded(null)}
-          hasUpload={uploaded != null}
-        />
+        ) : null}
         <div className="actions">
           {view.contestId ? <Link href={`/contests/${view.contestId}`}>{view.contestName || "Contest"}</Link> : null}
           {view.flightId > 0 ? <Link href={`/flights/${view.flightId}`}>All pilots on this flight</Link> : null}
@@ -156,7 +146,23 @@ export function ScoresheetTable({ view }: { view: ScoresheetView }) {
         Marks are the grades stored for this pilot flight. A is an average, CA is a conference average, and HZ is a hard
         zero. 0.0 is a numeric zero. Averages and points use IACCDB’s straight-average method. The last row is
         presentation.
+        {source ? "" : " No published sequence matched this flight, so the rows stay numbered."}
       </p>
+      <details className="card-fallback">
+        <summary>Sequence card</summary>
+        <p className="note">
+          Free and Unknown sequences are not in the contest database. A card is only a fallback for this browser when the
+          published sequence is missing.
+        </p>
+        <SequenceUpload
+          pilotFlightId={view.pilotFlightId}
+          kValues={view.kValues}
+          storageKey={storageKey}
+          onApply={(next) => setUploaded(next)}
+          onClear={() => setUploaded(null)}
+          hasUpload={uploaded != null}
+        />
+      </details>
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import knownSequences from "./fixtures/known-2026.json";
+import knownSequences from "./fixtures/published-sequences.json";
 
 export type SequenceFigure = {
   name: string | null;
@@ -11,6 +11,8 @@ export type SequenceCard = {
   aircat?: "P" | "G";
   level?: string;
   program?: string;
+  /** When set, the card belongs to a named contest, not every flight with the same K list. */
+  contestHint?: string;
   presentationK: number | null;
   source: string;
   figures: SequenceFigure[];
@@ -68,32 +70,39 @@ export function familyName(catalogs: string[]): string | null {
   return null;
 }
 
-export function isKnownFlight(name: string): boolean {
-  const text = name.toLowerCase();
-  if (text.includes("unknown") || text.includes("free")) return false;
-  return text.includes("known");
-}
-
 export function publishedCaptions(input: {
   year: number | null;
   categoryName: string;
   flightName: string;
+  contestName?: string;
   kValues: number[];
 }): { captions: FigureCaption[]; source: string } | null {
-  if (!isKnownFlight(input.flightName) || input.year == null) return null;
+  const program = flightProgram(input.flightName);
+  if (!program || input.year == null) return null;
   const category = categoryKey(input.categoryName);
   if (!category) return null;
-  const card = KNOWN.find(
+  const contest = (input.contestName ?? "").toLowerCase();
+  const matches = KNOWN.filter(
     (sequence) =>
       sequence.year === input.year &&
       sequence.aircat === category.aircat &&
       sequence.level === category.level &&
-      sequence.program === "known",
-  );
-  if (!card) return null;
-  const aligned = alignCard(input.kValues, card);
-  if ("error" in aligned) return null;
-  return { captions: aligned.captions, source: card.source };
+      sequence.program === program &&
+      (!sequence.contestHint || contest.includes(sequence.contestHint.toLowerCase())),
+  ).flatMap((card) => {
+    const aligned = alignCard(input.kValues, card);
+    return "error" in aligned ? [] : [{ source: card.source, captions: aligned.captions }];
+  });
+  if (matches.length !== 1) return null;
+  return matches[0];
+}
+
+export function flightProgram(name: string): "known" | "free" | "unknown" | null {
+  const text = name.toLowerCase();
+  if (text.includes("unknown")) return "unknown";
+  if (text.includes("free")) return "free";
+  if (text.includes("known")) return "known";
+  return null;
 }
 
 export function alignCard(
