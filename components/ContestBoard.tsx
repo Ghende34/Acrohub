@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AirplaneFace } from "@/components/AirplaneFace";
 import { ExternalLink } from "@/components/ExternalLink";
 import { JudgingPanel } from "@/components/JudgingPanel";
 import { ScoreBar } from "@/components/ScoreBar";
@@ -296,6 +297,7 @@ function Standings({
                 </span>
               ) : null}
             </button>
+            <AirplaneFace make={pilot.airplane.make} model={pilot.airplane.model} reg={pilot.airplane.reg} />
             {open ? (
               <div className="detail" id={`pilot-panel-${pilot.id}`}>
                 <div className="detail-links">

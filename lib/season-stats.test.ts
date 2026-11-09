@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { identifyAirplane } from "./airplanes";
 import {
   applyStatsFilter,
   bestSingles,
@@ -15,6 +16,7 @@ import {
 import type { ContestDetail } from "./types";
 
 function result(partial: Partial<SeasonResult> & Pick<SeasonResult, "pilotId" | "pilotName" | "percent">): SeasonResult {
+  const airplane = identifyAirplane(partial.make ?? "Extra", partial.model ?? "330SC");
   return {
     contestId: 1,
     contestName: "Contest",
@@ -33,6 +35,9 @@ function result(partial: Partial<SeasonResult> & Pick<SeasonResult, "pilotId" | 
     horsConcours: false,
     starQualifying: false,
     ...partial,
+    typeId: airplane.id,
+    typeName: airplane.name,
+    entered: airplane.entered,
   };
 }
 
@@ -124,8 +129,7 @@ test("averages exclude hors concours and honor airplane filters", () => {
     region: "",
     level: "",
     aircat: "P",
-    make: "extra",
-    model: "330sc",
+    typeId: "extra-330sc",
     chapter: "",
     name: "ada",
     minResults: 2,

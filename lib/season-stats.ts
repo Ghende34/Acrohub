@@ -1,3 +1,4 @@
+import { identifyAirplane } from "./airplanes";
 import { airLabel } from "./categories";
 import { formatPercent, fullName, percentNumber } from "./format";
 import type { ContestDetail } from "./types";
@@ -17,6 +18,9 @@ export type SeasonResult = {
   make: string;
   model: string;
   reg: string;
+  typeId: string;
+  typeName: string;
+  entered: string;
   rank: number | null;
   percent: number;
   points: string;
@@ -29,8 +33,7 @@ export type StatsFilter = {
   region: string;
   level: string;
   aircat: string;
-  make: string;
-  model: string;
+  typeId: string;
   chapter: string;
   name: string;
   minResults: number;
@@ -40,8 +43,7 @@ export const DEFAULT_STATS_FILTER: StatsFilter = {
   region: "",
   level: "",
   aircat: "",
-  make: "",
-  model: "",
+  typeId: "",
   chapter: "",
   name: "",
   minResults: 2,
@@ -61,6 +63,10 @@ export type PilotRow = {
   wins: number;
   stars: number;
   airplane: string;
+  entered: string;
+  make: string;
+  model: string;
+  reg: string;
 };
 
 export function seasonResultsFromContest(contest: ContestDetail): SeasonResult[] {
@@ -72,6 +78,7 @@ export function seasonResultsFromContest(contest: ContestDetail): SeasonResult[]
       if (!label.endsWith("%") || percent == null) continue;
       const rounded = Number(label.slice(0, -1));
       if (!Number.isFinite(rounded)) continue;
+      const airplane = identifyAirplane(pilot.airplane.make, pilot.airplane.model);
       rows.push({
         contestId: contest.id,
         contestName: contest.name,
@@ -86,6 +93,9 @@ export function seasonResultsFromContest(contest: ContestDetail): SeasonResult[]
         make: pilot.airplane.make,
         model: pilot.airplane.model,
         reg: pilot.airplane.reg,
+        typeId: airplane.id,
+        typeName: airplane.name,
+        entered: airplane.entered,
         rank: pilot.rank,
         percent: rounded,
         points: pilot.points,
@@ -104,8 +114,7 @@ export function applyStatsFilter(results: SeasonResult[], filter: StatsFilter): 
     if (filter.region && result.region !== filter.region) return false;
     if (filter.level && result.level !== filter.level) return false;
     if (filter.aircat && result.aircat !== filter.aircat) return false;
-    if (filter.make && key(result.make) !== filter.make) return false;
-    if (filter.model && key(result.model) !== filter.model) return false;
+    if (filter.typeId && result.typeId !== filter.typeId) return false;
     if (filter.chapter && result.chapter !== filter.chapter) return false;
     if (nameTokens.length > 0) {
       const name = result.pilotName.toLowerCase();
@@ -143,7 +152,11 @@ export function summarizePilots(results: SeasonResult[]): PilotRow[] {
       bestCategory: best.categoryName,
       wins: list.filter((result) => result.rank === 1).length,
       stars: list.filter((result) => result.starQualifying).length,
-      airplane: [best.make, best.model].filter(Boolean).join(" "),
+      airplane: best.typeName,
+      entered: best.entered,
+      make: best.make,
+      model: best.model,
+      reg: best.reg,
     });
   }
   return rows;
@@ -225,21 +238,19 @@ export function facetOptions(results: SeasonResult[], filter: StatsFilter): {
   regions: string[];
   levels: string[];
   aircats: { value: string; label: string }[];
-  makes: { value: string; label: string }[];
-  models: { value: string; label: string }[];
+  types: { value: string; label: string }[];
   chapters: string[];
 } {
-  const pool = applyStatsFilter(results, { ...filter, make: "", model: "" });
-  const makes = countLabels(pool.map((result) => result.make));
-  const modelPool = filter.make ? pool.filter((result) => key(result.make) === filter.make) : pool;
   return {
     regions: unique(results.map((result) => result.region)),
     levels: unique(results.map((result) => result.level)),
     aircats: unique(results.map((result) => result.aircat))
       .filter(Boolean)
       .map((value) => ({ value, label: airLabel(value) })),
-    makes,
-    models: countLabels(modelPool.map((result) => result.model)),
+    types: countLabels(results.map((result) => result.typeName)).map((item) => {
+      const match = results.find((result) => result.typeName === item.label);
+      return { value: match?.typeId ?? item.value, label: item.label };
+    }).sort((a, b) => a.label.localeCompare(b.label)),
     chapters: unique(results.map((result) => result.chapter)).filter(Boolean),
   };
 }
@@ -252,10 +263,6 @@ export function formatAverage(value: number): string {
 function mean(values: number[]): number {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function key(value: string): string {
-  return value.trim().toLowerCase();
 }
 
 function unique(values: string[]): string[] {

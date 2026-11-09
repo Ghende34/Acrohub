@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { AirplaneFace } from "@/components/AirplaneFace";
 import { ScoreBar } from "@/components/ScoreBar";
 import { levelLabel, placeWord, regionLabel } from "@/lib/format";
 import {
@@ -52,7 +53,6 @@ export function StatsExplorer({
   function update(partial: Partial<StatsFilter>) {
     setFilter((current) => {
       const next = { ...current, ...partial };
-      if (partial.make != null && partial.make !== current.make) next.model = "";
       return next;
     });
   }
@@ -107,8 +107,7 @@ export function StatsExplorer({
           allLabel="All regions"
         />
         <div className="filter-row">
-          <Select label="Make" value={filter.make} onChange={(make) => update({ make })} options={facets.makes} allLabel="All makes" />
-          <Select label="Model" value={filter.model} onChange={(model) => update({ model })} options={facets.models} allLabel="All models" />
+          <Select label="Airplane" value={filter.typeId} onChange={(typeId) => update({ typeId })} options={facets.types} allLabel="All types" />
           <Select
             label="Chapter"
             value={filter.chapter}
@@ -158,6 +157,7 @@ export function StatsExplorer({
                     {" "}
                     {result.categoryName} · <Link href={`/contests/${result.contestId}`}>{result.contestName}</Link>
                   </span>
+                  <AirplaneFace make={result.make} model={result.model} reg={result.reg} />
                 </span>
                 <ScoreBar percent={result.percent} />
                 <span className="form-pct">
@@ -241,7 +241,9 @@ function Board({
                   {" "}
                   {detail(row)}
                   {row.airplane ? ` · ${row.airplane}` : ""}
+                  {row.entered && row.entered !== row.airplane ? ` · entered as ${row.entered}` : ""}
                 </span>
+                <AirplaneFace make={row.make} model={row.model} reg={row.reg} />
                 <ScoreBar percent={bar(row)} />
               </span>
               <span className="form-pct">{render(row)}</span>

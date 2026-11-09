@@ -921,6 +921,28 @@ h1, h2, h3 { overflow-wrap: break-word; }
 .mark { font-variant-numeric: tabular-nums; }
 .mark-hz, .mark-zero { color: #ff8d90; font-weight: 700; }
 
+.plane-face { margin: 0.35rem 0 0.6rem; }
+.plane-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; max-width: 420px; }
+.plane-pair img {
+  width: 100%;
+  height: 78px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #07080d;
+  border: 1px solid var(--line);
+}
+.plane-face.full .plane-pair { max-width: 640px; }
+.plane-face.full .plane-pair img { height: 180px; }
+.plane-face figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.plane-face figcaption a { color: #ffd0d1; }
+
 .filter-row { display: flex; flex-wrap: wrap; gap: 0.7rem; }
 .filter-field { display: flex; flex-direction: column; gap: 0.25rem; color: var(--muted); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .filter-field select {

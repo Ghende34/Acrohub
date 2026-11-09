@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AirplaneFace } from "@/components/AirplaneFace";
 import { airplaneLine, placeWord } from "@/lib/format";
 import type { ScoresheetView } from "@/lib/iaccdb";
 import type { Mark } from "@/lib/scoresheet";
@@ -27,6 +28,7 @@ export function ScoresheetTable({ view }: { view: ScoresheetView }) {
           {view.rank != null ? <span>{placeWord(view.rank)} on this flight</span> : null}
           {view.horsConcours ? <span>Hors concours</span> : null}
         </p>
+        <AirplaneFace make={view.airplane.make} model={view.airplane.model} reg={view.airplane.reg} size="full" />
         <div className="actions">
           {view.contestId ? <Link href={`/contests/${view.contestId}`}>{view.contestName || "Contest"}</Link> : null}
           {view.flightId > 0 ? <Link href={`/flights/${view.flightId}`}>All pilots on this flight</Link> : null}

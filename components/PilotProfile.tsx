@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { AirplaneFace } from "@/components/AirplaneFace";
 import { ExternalLink } from "@/components/ExternalLink";
 import { ScoreBar } from "@/components/ScoreBar";
 import { contestUrl, pilotUrl } from "@/lib/constants";
@@ -185,6 +186,7 @@ export function PilotProfile({ profile }: { profile: PilotProfileData }) {
                           {appearance.score.airplane}
                           {appearance.score.reg ? ` · ${appearance.score.reg}` : ""}
                         </p>
+                        <AirplaneFace make={appearance.score.airplane} model="" reg={appearance.score.reg} size="full" />
                         <div style={{ marginTop: "0.4rem" }}>
                           <ScoreBar percent={Number.parseFloat(appearance.score.percent)} />
                         </div>
