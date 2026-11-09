@@ -1,6 +1,7 @@
 import https from "node:https";
 import { CACHE_TTL_MS, IACCDB_ORIGIN, PILOT_SCORE_FETCH_LIMIT } from "./constants";
 import { buildSeasonBook, figureAverage, sheetPercent, type SeasonBook, type SeasonContest, type SeasonFigure } from "./season-book";
+import { publishedCaptions, type FigureCaption } from "./sequence-card";
 import { mapPool } from "./pool";
 import {
   parseContestDetail,
@@ -240,6 +241,9 @@ export type ScoresheetView = {
   contestYear: number | null;
   rank: number | null;
   judges: { name: string; assistant: string }[];
+  kValues: number[];
+  captions: FigureCaption[] | null;
+  captionSource: string | null;
   sheet: Scoresheet;
 };
 
@@ -265,6 +269,14 @@ export async function getScoresheet(id: number): Promise<ScoresheetView | null> 
     year: flight?.contest?.year ?? null,
     totalPossible: standing?.totalPossible ?? null,
   });
+  const contestYear = flight?.contest?.year ?? null;
+  const categoryName = record.flight.categories.map((category) => category.name).filter(Boolean).join(", ");
+  const published = publishedCaptions({
+    year: contestYear,
+    categoryName,
+    flightName: record.flight.name,
+    kValues: record.kValues,
+  });
   return {
     pilotFlightId: record.id,
     pilot: record.pilot,
@@ -273,12 +285,15 @@ export async function getScoresheet(id: number): Promise<ScoresheetView | null> 
     horsConcours: record.horsConcours,
     flightId: record.flight.id,
     flightName: record.flight.name,
-    categoryName: record.flight.categories.map((category) => category.name).filter(Boolean).join(", "),
+    categoryName,
     contestId: flight?.contest?.id ?? null,
     contestName: flight?.contest?.name ?? "",
-    contestYear: flight?.contest?.year ?? null,
+    contestYear,
     rank: standing?.rank ?? null,
     judges: record.judges.map((judge) => ({ name: judge.name, assistant: judge.assistant })),
+    kValues: record.kValues,
+    captions: published?.captions ?? null,
+    captionSource: published?.source ?? null,
     sheet,
   };
 }

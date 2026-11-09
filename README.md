@@ -36,6 +36,7 @@ npm test
 - `/judges` — judge experience, with rank agreement and pair agreement
 - `/stats` — highest averages, wins, best finishes, and best single scores for one contest year. Airplane filters use a canonical type, so Extra 300L, Pitts S-2B, and Super Decathlon spellings group together. A type photo and a rendering show beside the airplane.
 - A pilot page is a season book for one contest year: contests, category results, flights, in-app scoresheets, season average, best and weakest contest and flight, a trend, figure notes, and IACCDB star-qualifying flags
+- Known scoresheets label each figure from the published IAC sequence for that year and category when the K list matches. Other flights can take a sequence-card PDF; names are kept in this browser
 - `/watch` — a device watch list for contests and pilots. Acrohub checks the cached record about every 10 minutes while the site is open, and again when you return
 - `/leaders` — regional series standings for the current contest year
 

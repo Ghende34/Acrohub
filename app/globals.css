@@ -913,7 +913,15 @@ h1, h2, h3 { overflow-wrap: break-word; }
   left: 0;
   background: #10141d;
   z-index: 1;
+  white-space: normal;
+  min-width: 8.5rem;
 }
+.fig-id { display: block; color: var(--red); font-weight: 700; }
+.fig-name, .fig-cat { display: block; letter-spacing: 0; text-transform: none; font-weight: 550; }
+.fig-cat { color: var(--muted); font-size: 0.75rem; font-weight: 450; }
+.card-upload { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: end; margin: 0.4rem 0 0.8rem; }
+.card-upload label { display: grid; gap: 0.25rem; color: var(--muted); font-size: 0.85rem; }
+.card-upload input { color: var(--text); }
 .sheet-j { display: block; color: var(--red); letter-spacing: 0.12em; }
 .sheet-judge { display: block; color: white; font-size: 0.95rem; letter-spacing: 0; text-transform: none; font-weight: 600; }
 .sheet-assist { display: block; color: var(--faint); letter-spacing: 0; text-transform: none; font-weight: 400; }
